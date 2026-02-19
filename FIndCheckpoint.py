@@ -4,7 +4,7 @@ import numpy
 
 
 def sc_record():
-	mon = {"top": 0, "left": 0, "width":1920, "height":50}
+	mon = {"top": 400, "left": 0, "width":1920, "height":50}
 
 	title = "[MSS] FPS bench"
 	fps = 0
@@ -26,16 +26,30 @@ def sc_record():
 def find_point(img):
 	img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-	mask1 = cv2.inRange(img_hsv, (0,50,20), (5,255,255))
-	mask2 = cv2.inRange(img_hsv, (175,50,20), (180,255,255))
+	lower_red1 = numpy.array([0, 30, 20])
+	upper_red1 = numpy.array([15, 255, 255])
+	lower_red2 = numpy.array([160, 30, 20])
+	upper_red2 = numpy.array([180, 255, 255])
 
-	mask = cv2.bitwise_or(mask1, mask2)
+	mask1 = cv2.inRange(img_hsv, lower_red1, upper_red1)
+	mask2 = cv2.inRange(img_hsv, lower_red2, upper_red2)
+	color_mask = cv2.bitwise_or(mask1, mask2)
 
-	if cv2.countNonZero(mask) > 0 and check_size(mask):
-		print(check_size(mask))
-		print('Red is present!')
-	else:
-		print('Red is not present!')
+	kernel = numpy.ones((5,5), numpy.uint8)
+	color_mask = cv2.morphologyEx(color_mask, cv2.MORPH_CLOSE, kernel)
+
+	contours, _ = cv2.findContours(color_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+	cv2.imshow("Mask", color_mask)
+	for cnt in contours:
+		area = cv2.contourArea(cnt)
+		if area < 100:
+			continue
+		x, y, w, h = cv2.boundingRect(cnt)
+
+		if w > h * 1.5 and w > 520:
+			print("detected")
+
 
 
 def check_size(mask):
